@@ -12,9 +12,9 @@ public class TransferController {
     private final TransferService transfers;
     private final WalletService wallets;
 
-    public TransferController(TransferService t, WalletService w) {
-        transfers = t;
-        wallets = w;
+    public TransferController(TransferService transferService, WalletService walletService) {
+        transfers = transferService;
+        wallets = walletService;
     }
 
     @PostMapping

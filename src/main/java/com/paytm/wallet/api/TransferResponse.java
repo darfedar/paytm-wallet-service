@@ -14,16 +14,16 @@ public record TransferResponse(
         Instant createdAt,
         Instant completedAt
 ) {
-    public static TransferResponse from(Transfer t) {
+    public static TransferResponse from(Transfer transfer) {
         return new TransferResponse(
-                t.getId(),
-                t.getFromWalletId(),
-                t.getToWalletId(),
-                t.getAmountPaise(),
-                t.getIdempotencyKey(),
-                t.getStatus().name(),
-                t.getCreatedAt(),
-                t.getCompletedAt()
+                transfer.getId(),
+                transfer.getFromWalletId(),
+                transfer.getToWalletId(),
+                transfer.getAmountPaise(),
+                transfer.getIdempotencyKey(),
+                transfer.getStatus().name(),
+                transfer.getCreatedAt(),
+                transfer.getCompletedAt()
         );
     }
 }

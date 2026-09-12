@@ -7,11 +7,11 @@ public record WalletResponse(
         String userId,
         long balancePaise
 ) {
-    public static WalletResponse from(Wallet w) {
+    public static WalletResponse from(Wallet wallet) {
         return new WalletResponse(
-                w.getId(),
-                w.getUserId(),
-                w.getBalancePaise()
+                wallet.getId(),
+                wallet.getUserId(),
+                wallet.getBalancePaise()
         );
     }
 }

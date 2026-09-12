@@ -9,14 +9,14 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/test/wallets")
 @Profile("local")
 public class TestFundingController {
-    private final WalletService s;
+    private final WalletService walletService;
 
-    public TestFundingController(WalletService s) {
-        this.s = s;
+    public TestFundingController(WalletService walletService) {
+        this.walletService = walletService;
     }
 
     @PostMapping("/{id}/fund")
     public WalletResponse fund(@PathVariable Long id, @RequestParam long amountPaise) {
-        return WalletResponse.from(s.fundForTest(id, amountPaise));
+        return WalletResponse.from(walletService.fundForTest(id, amountPaise));
     }
 }

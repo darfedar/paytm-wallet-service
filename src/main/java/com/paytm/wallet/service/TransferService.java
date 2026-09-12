@@ -23,19 +23,20 @@ public class TransferService {
     private final Counter transfersDeclined;
     private final Counter idempotentReplays;
 
-    public TransferService(WalletRepository w, TransferRepository t, MeterRegistry registry) {
-        wallets = w;
-        transfers = t;
+    public TransferService(WalletRepository wallet, TransferRepository transferRepository, MeterRegistry registry) {
+        wallets = wallet;
+        transfers = transferRepository;
         transfersCreated = registry.counter("transfers_created_total");
         transfersDeclined = registry.counter("transfers_declined_insufficient_funds_total");
         idempotentReplays = registry.counter("transfers_idempotent_replays_total");
     }
 
     @Transactional
-    public Transfer transfer(TransferRequest r, String key) {
-        validate(r, key);
-        String hash = hash(r);
-        int inserted = transfers.reserve(r.from(), r.to(), r.amountPaise(), key, hash);
+    public Transfer transfer(TransferRequest transferRequest, String key) {
+        validate(transferRequest, key);
+        String hash = hash(transferRequest);
+        int inserted = transfers.reserve(transferRequest.from(), transferRequest.to(), transferRequest.amountPaise(),
+                key, hash);
         if (inserted == 0) {
             Transfer existing = transfers.findByIdempotencyKey(key).orElseThrow();
             if (!existing.getRequestHash().equals(hash))
@@ -44,26 +45,32 @@ public class TransferService {
             idempotentReplays.increment();
             return existing;
         }
-        long first = Math.min(r.from(), r.to()), second = Math.max(r.from(), r.to());
-        wallets.findByIdForUpdate(first).orElseThrow(() -> new WalletService.NotFound("Wallet not found: " + first));
-        wallets.findByIdForUpdate(second).orElseThrow(() -> new WalletService.NotFound("Wallet not found: " + second));
-        int debited = wallets.debitIfSufficient(r.from(), r.amountPaise());
-        Transfer t = transfers.findByIdempotencyKey(key).orElseThrow();
-        
-        log.info("event=transfer_created transferId={} from={} to={} amountPaise={}", t.getId(), r.from(), r.to(), r.amountPaise());
+        long lowerWalletId = Math.min(transferRequest.from(), transferRequest.to()),
+                higherWalletId = Math.max(transferRequest.from(), transferRequest.to());
+        wallets.findByIdForUpdate(lowerWalletId)
+                .orElseThrow(() -> new WalletService.NotFound("Wallet not found: " + lowerWalletId));
+        wallets.findByIdForUpdate(higherWalletId)
+                .orElseThrow(() -> new WalletService.NotFound("Wallet not found: " + higherWalletId));
+        int debited = wallets.debitIfSufficient(transferRequest.from(), transferRequest.amountPaise());
+        Transfer transfer = transfers.findByIdempotencyKey(key).orElseThrow();
+
+        log.info("event=transfer_created transferId={} from={} to={} amountPaise={}", transfer.getId(),
+                transferRequest.from(), transferRequest.to(), transferRequest.amountPaise());
         transfersCreated.increment();
-        
+
         if (debited == 0) {
-            t.decline();
-            log.info("event=transfer_declined_insufficient_funds transferId={} from={} to={} amountPaise={}", t.getId(), r.from(), r.to(), r.amountPaise());
+            transfer.decline();
+            log.info("event=transfer_declined_insufficient_funds transferId={} from={} to={} amountPaise={}",
+                    transfer.getId(), transferRequest.from(), transferRequest.to(), transferRequest.amountPaise());
             transfersDeclined.increment();
-            return t;
+            return transfer;
         }
-        if (wallets.credit(r.to(), r.amountPaise()) != 1)
+        if (wallets.credit(transferRequest.to(), transferRequest.amountPaise()) != 1)
             throw new IllegalStateException("Destination wallet disappeared");
-        t.complete();
-        log.info("event=transfer_completed transferId={} from={} to={} amountPaise={}", t.getId(), r.from(), r.to(), r.amountPaise());
-        return t;
+        transfer.complete();
+        log.info("event=transfer_completed transferId={} from={} to={} amountPaise={}", transfer.getId(),
+                transferRequest.from(), transferRequest.to(), transferRequest.amountPaise());
+        return transfer;
     }
 
     @Transactional(readOnly = true)
@@ -71,16 +78,20 @@ public class TransferService {
         return transfers.findById(id).orElseThrow(() -> new NotFound("Transfer not found: " + id));
     }
 
-    private static void validate(TransferRequest r, String key) {
-        if (key == null || key.isBlank()) throw new IllegalArgumentException("Idempotency-Key header is required");
-        if (r.from().equals(r.to())) throw new IllegalArgumentException("from and to wallets must differ");
-        if (r.amountPaise() <= 0) throw new IllegalArgumentException("amountPaise must be positive");
+    private static void validate(TransferRequest transferRequest, String key) {
+        if (key == null || key.isBlank())
+            throw new IllegalArgumentException("Idempotency-Key header is required");
+        if (transferRequest.from().equals(transferRequest.to()))
+            throw new IllegalArgumentException("from and to wallets must differ");
+        if (transferRequest.amountPaise() <= 0)
+            throw new IllegalArgumentException("amountPaise must be positive");
     }
 
-    private static String hash(TransferRequest r) {
+    private static String hash(TransferRequest transferRequest) {
         try {
-            String s = r.from() + "|" + r.to() + "|" + r.amountPaise();
-            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)));
+            String rawInput = transferRequest.from() + "|" + transferRequest.to() + "|" + transferRequest.amountPaise();
+            return HexFormat.of()
+                    .formatHex(MessageDigest.getInstance("SHA-256").digest(rawInput.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

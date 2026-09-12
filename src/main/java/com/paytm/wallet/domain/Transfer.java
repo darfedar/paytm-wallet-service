@@ -14,9 +14,9 @@ public class Transfer {
     @Column(name = "from_wallet_id", nullable = false)
     private Long fromWalletId;
 
-
     @Column(name = "to_wallet_id", nullable = false)
     private Long toWalletId;
+
     @Column(name = "amount_paise", nullable = false)
     private long amountPaise;
 

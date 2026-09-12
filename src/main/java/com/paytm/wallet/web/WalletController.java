@@ -7,27 +7,28 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/wallets")
 public class WalletController {
-    private final WalletService service;
+    private final WalletService walletService;
 
-    public WalletController(WalletService s) {
-        service = s;
+    public WalletController(WalletService walletService) {
+        this.walletService = walletService;
     }
 
     @PostMapping
     public WalletResponse create(@RequestHeader("Authorization") String auth) {
-        return WalletResponse.from(service.getOrCreate(user(auth)));
+        return WalletResponse.from(walletService.getOrCreate(user(auth)));
     }
 
     @GetMapping("/{id}")
     public WalletResponse get(@PathVariable Long id) {
-        return WalletResponse.from(service.get(id));
+        return WalletResponse.from(walletService.get(id));
     }
 
-    static String user(String a) {
-        if (a == null || !a.startsWith("Bearer "))
+    static String user(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer "))
             throw new IllegalArgumentException("Authorization must be a Bearer token");
-        String u = a.substring(7).trim();
-        if (u.isBlank()) throw new IllegalArgumentException("Bearer token is empty");
-        return u;
+        String userId = authorizationHeader.substring(7).trim();
+        if (userId.isBlank())
+            throw new IllegalArgumentException("Bearer token is empty");
+        return userId;
     }
 }
