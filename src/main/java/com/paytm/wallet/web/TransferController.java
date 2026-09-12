@@ -18,15 +18,16 @@ public class TransferController {
     }
 
     @PostMapping
-    public TransferResponse create(@RequestHeader("Authorization") String auth, @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody TransferRequest r) {
-        Wallet from = wallets.get(r.from());
+    public TransferResponse transfer(@RequestHeader("Authorization") String auth,
+            @RequestHeader("Idempotency-Key") String key, @Valid @RequestBody TransferRequest transferRequest) {
+        Wallet from = wallets.getWallet(transferRequest.from());
         if (!from.getUserId().equals(WalletController.user(auth)))
             throw new IllegalArgumentException("Caller is not the owner of the source wallet");
-        return TransferResponse.from(transfers.transfer(r, key));
+        return TransferResponse.from(transfers.transfer(transferRequest, key));
     }
 
     @GetMapping("/{id}")
-    public TransferResponse get(@PathVariable Long id) {
-        return TransferResponse.from(transfers.get(id));
+    public TransferResponse getTransfer(@PathVariable Long id) {
+        return TransferResponse.from(transfers.getTransfer(id));
     }
 }

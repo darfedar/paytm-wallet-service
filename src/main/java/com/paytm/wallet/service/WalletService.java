@@ -17,7 +17,7 @@ public class WalletService {
     }
 
     @Transactional
-    public Wallet getOrCreate(String userId) {
+    public Wallet getOrCreateWallet(String userId) {
         int inserted = walletRepository.insertIfAbsent(userId);
         Wallet wallet = walletRepository.findByUserId(userId).orElseThrow(() -> new IllegalStateException("Wallet disappeared after get-or-create"));
         if (inserted == 1) {
@@ -27,7 +27,7 @@ public class WalletService {
     }
 
     @Transactional(readOnly = true)
-    public Wallet get(Long id) {
+    public Wallet getWallet(Long id) {
         return walletRepository.findById(id).orElseThrow(() -> new NotFound("Wallet not found: " + id));
     }
 

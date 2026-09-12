@@ -14,13 +14,13 @@ public class WalletController {
     }
 
     @PostMapping
-    public WalletResponse create(@RequestHeader("Authorization") String auth) {
-        return WalletResponse.from(walletService.getOrCreate(user(auth)));
+    public WalletResponse createWallet(@RequestHeader("Authorization") String auth) {
+        return WalletResponse.from(walletService.getOrCreateWallet(user(auth)));
     }
 
     @GetMapping("/{id}")
-    public WalletResponse get(@PathVariable Long id) {
-        return WalletResponse.from(walletService.get(id));
+    public WalletResponse getWallet(@PathVariable Long id) {
+        return WalletResponse.from(walletService.getWallet(id));
     }
 
     static String user(String authorizationHeader) {

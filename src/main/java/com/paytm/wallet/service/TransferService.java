@@ -74,7 +74,7 @@ public class TransferService {
     }
 
     @Transactional(readOnly = true)
-    public Transfer get(Long id) {
+    public Transfer getTransfer(Long id) {
         return transfers.findById(id).orElseThrow(() -> new NotFound("Transfer not found: " + id));
     }
 
