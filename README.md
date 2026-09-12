@@ -2,6 +2,35 @@
 
 This repository contains a simple, highly-concurrent peer-to-peer wallet and transfer service built with Spring Boot, PostgreSQL, and Flyway. It is designed to prioritize correctness (conservation of money and absolute prevention of overdrafts/double-spends) under heavy concurrency.
 
+## Live API Usage
+
+**Live URL:** `https://paytm-wallet-service-tf0a.onrender.com`
+
+### 1. Get or Create Wallet (`POST /wallets`)
+```bash
+curl -sS -X POST https://paytm-wallet-service-tf0a.onrender.com/wallets \
+  -H "Authorization: Bearer user-alice"
+```
+
+### 2. Get Wallet Balance (`GET /wallets/{id}`)
+```bash
+curl -sS https://paytm-wallet-service-tf0a.onrender.com/wallets/1
+```
+
+### 3. Move Money (`POST /transfers`)
+```bash
+curl -sS -X POST https://paytm-wallet-service-tf0a.onrender.com/transfers \
+  -H "Authorization: Bearer user-alice" \
+  -H "Idempotency-Key: tx-88239" \
+  -H "Content-Type: application/json" \
+  -d '{"from": 1, "to": 2, "amountPaise": 5000}'
+```
+
+### 4. Transfer Status (`GET /transfers/{id}`)
+```bash
+curl -sS https://paytm-wallet-service-tf0a.onrender.com/transfers/1
+```
+
 ## Data Model
 
 The application uses a minimalist, fully-relational schema with strict database constraints:
